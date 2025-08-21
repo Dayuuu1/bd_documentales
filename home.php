@@ -7,7 +7,6 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-// Guardar post
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !empty($_POST['contenido'])) {
     $contenido = trim($_POST['contenido']);
     $db->posts->insertOne([
@@ -19,7 +18,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !empty($_POST['contenido'])) {
     exit;
 }
 
-// Mostrar posts
 $posts = $db->posts->find([], ['sort' => ['fecha' => -1]]);
 ?>
 <!DOCTYPE html>
@@ -27,76 +25,100 @@ $posts = $db->posts->find([], ['sort' => ['fecha' => -1]]);
 
 <head>
     <meta charset="UTF-8">
-    <title>Red Social</title>
+    <title>MiRed - Inicio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+        .post-card {
+            border-radius: 12px;
+        }
+        .post-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .comment-box {
+            border-radius: 20px;
+        }
+        .create-post textarea {
+            border-radius: 12px;
+            resize: none;
+        }
+    </style>
 </head>
 
-<body class="bg-light">
+<body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="#">MiRed</a>
-            <div class="d-flex">
-                <span class="navbar-text text-white me-3">
+            <a class="navbar-brand fw-bold" href="#">SKY</a>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3 fw-semibold">
                     Hola, <?= htmlspecialchars($_SESSION['nombre']) ?>
                 </span>
-                <a href="logout.php" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+                <a href="logout.php" class="btn btn-light btn-sm rounded-pill">Cerrar sesión</a>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <!-- Publicar nuevo post -->
-        <div class="card shadow-sm mb-4">
+    <div class="container my-4" style="max-width: 700px;">
+
+        <!-- Crear publicación -->
+        <div class="card shadow-sm mb-4 create-post">
             <div class="card-body">
-                <h5 class="card-title">Crear una publicación</h5>
+                <div class="d-flex align-items-center mb-2">
+                    <img src="https://ui-avatars.com/api/?name=<?= urlencode($_SESSION['nombre']) ?>&background=random" class="post-avatar" alt="Perfil">
+                    <h6 class="mb-0"><?= htmlspecialchars($_SESSION['nombre']) ?></h6>
+                </div>
                 <form method="POST">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <textarea class="form-control" name="contenido" rows="3" placeholder="¿Qué estás pensando?" required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">Publicar</button>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary rounded-pill">Publicar</button>
+                    </div>
                 </form>
             </div>
         </div>
 
-        <!-- Mostrar posts -->
-        <h4 class="mb-3">Posts recientes</h4>
-
+        <!-- Feed de posts -->
         <?php if (!empty($posts)): ?>
             <?php foreach ($posts as $post): ?>
-                <div class="card mb-3 shadow-sm">
+                <div class="card mb-4 shadow-sm post-card">
                     <div class="card-body">
-                        <p class="card-text">
-                            <?= htmlspecialchars($post['contenido'] ?? '') ?>
-                        </p>
-                        <small class="text-muted">
-                            <?php
-                            if (isset($post['fecha']) && $post['fecha'] instanceof MongoDB\BSON\UTCDateTime) {
-                                echo $post['fecha']->toDateTime()->format('d-m-Y H:i');
-                            }
-                            ?>
-                        </small>
+                        <div class="d-flex align-items-center mb-2">
+                            <img src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" class="post-avatar" alt="Usuario">
+                            <div>
+                                <h6 class="mb-0 fw-bold"><?= htmlspecialchars($_SESSION['nombre']) ?></h6>
+                                <small class="text-muted">
+                                    <?php
+                                    if (isset($post['fecha']) && $post['fecha'] instanceof MongoDB\BSON\UTCDateTime) {
+                                        echo $post['fecha']->toDateTime()->format('d M Y H:i');
+                                    }
+                                    ?>
+                                </small>
+                            </div>
+                        </div>
+                        <p class="mt-2"><?= nl2br(htmlspecialchars($post['contenido'] ?? '')) ?></p>
                     </div>
 
-                    <!-- Mostrar comentarios -->
+                    <!-- Comentarios -->
                     <div class="card-body border-top">
-                        <h6 class="text-muted">Comentarios:</h6>
                         <?php
                         $comentarios = $db->comentarios->find(
                             ["post_id" => $post['_id']],
                             ["sort" => ["fecha" => -1]]
                         );
-
                         foreach ($comentarios as $comentario):
-                            // Mostrar "Yo" si el comentario es del usuario logueado
-                            if (
+                            $nombre = (
                                 isset($_SESSION['usuario_id']) &&
                                 (string) $comentario['usuario_id'] === (string) $_SESSION['usuario_id']
-                            ) {
-                                $nombre = "Yo";
-                            } else {
-                                $nombre = $comentario['usuario'] ?? "Anónimo";
-                            }
+                            ) ? "Yo" : ($comentario['usuario'] ?? "Anónimo");
                         ?>
                             <div class="mb-2">
                                 <strong><?= htmlspecialchars($nombre) ?></strong>:
@@ -104,7 +126,7 @@ $posts = $db->posts->find([], ['sort' => ['fecha' => -1]]);
                                 <small class="text-muted">
                                     <?php
                                     if (isset($comentario['fecha']) && $comentario['fecha'] instanceof MongoDB\BSON\UTCDateTime) {
-                                        echo $comentario['fecha']->toDateTime()->format('d-m-Y H:i');
+                                        echo $comentario['fecha']->toDateTime()->format('d M Y H:i');
                                     }
                                     ?>
                                 </small>
@@ -112,25 +134,21 @@ $posts = $db->posts->find([], ['sort' => ['fecha' => -1]]);
                         <?php endforeach; ?>
                     </div>
 
-                    <!-- Formulario para comentar -->
-                    <div class="card-footer">
+                    <!-- Comentar -->
+                    <div class="card-footer bg-light">
                         <form action="comentar.php" method="POST" class="d-flex">
                             <input type="hidden" name="post_id" value="<?= htmlspecialchars((string) $post['_id']) ?>">
-                            <input type="text" name="comentario" class="form-control me-2" placeholder="Escribe un comentario" required>
-                            <button type="submit" class="btn btn-sm btn-outline-primary">Comentar</button>
+                            <input type="text" name="comentario" class="form-control me-2 comment-box" placeholder="Escribe un comentario..." required>
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill">Comentar</button>
                         </form>
                     </div>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <p class="text-muted">No hay posts disponibles.</p>
+            <p class="text-muted text-center">No hay publicaciones todavía.</p>
         <?php endif; ?>
-
-
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

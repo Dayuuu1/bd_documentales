@@ -1,12 +1,10 @@
 <?php
-// login.php
-$db = require __DIR__ . "/conexion/conexion.php"; // conexión a Mongo
+$db = require __DIR__ . "/conexion/conexion.php"; 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
 
-    // Buscar usuario en Mongo con el campo correcto
     $usuario = $db->usuarios->findOne(['correo' => $email]);
 
     if ($usuario && password_verify($password, $usuario['password'])) {
@@ -17,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: home.php");
         exit;
     } else {
-        $error = "❌ Usuario o contraseña incorrectos.";
+        $mensaje = "Usuario o contraseña incorrectos.";
     }
 }
 ?>
@@ -39,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="col-md-5">
                 <div class="card shadow-lg border-0 rounded-3">
                     <div class="card-body p-4">
-                        <h3 class="text-center mb-4">🔑 Iniciar Sesión</h3>
+                        <h3 class="text-center mb-4"> Iniciar Sesión</h3>
 
                         <?php if (!empty($mensaje)): ?>
                             <div class="alert alert-danger text-center"><?= $mensaje ?></div>
@@ -61,7 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </form>
 
                         <p class="text-center mt-3">
-                            ¿No tienes cuenta? <a href="registro.php">Regístrate</a>
+                            ¿No tienes cuenta? <a href="index.php">Regístrate</a>
                         </p>
                     </div>
                 </div>
